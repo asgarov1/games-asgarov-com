@@ -1,0 +1,19 @@
+<div class="margin-top-2">
+  <div class="center-flex-container">
+    <button mat-fab matTooltip="Primary" color="primary" (click)="pressed(Direction.UP)">
+      <mat-icon>arrow_upward</mat-icon>
+    </button>
+  </div>
+  <div class="center-flex-container">
+    <button mat-fab matTooltip="Primary" color="primary" (click)="pressed(Direction.LEFT)">
+      <!--   arrow left   -->
+      <mat-icon style="transform: rotate(270deg)">arrow_upward</mat-icon>
+    </button>
+    <button mat-fab matTooltip="Primary" (click)="pressed(Direction.DOWN)" color="primary" style="margin: 0.5rem">
+      <mat-icon>arrow_downward</mat-icon>
+    </button>
+    <button mat-fab matTooltip="Primary" color="primary" (click)="pressed(Direction.RIGHT)">
+      <mat-icon style="transform: rotate(90deg)">arrow_upward</mat-icon>
+    </button>
+  </div>
+</div>

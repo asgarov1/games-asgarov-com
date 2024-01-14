@@ -2,7 +2,6 @@ import {Component, ElementRef, Input, OnInit, ViewChild} from '@angular/core';
 import {Point} from "../../../domain/point";
 import {Direction} from "../../../domain/direction";
 import {NumberUtil} from "../../../util/number-util";
-import {last} from "rxjs";
 
 @Component({
   selector: 'app-snake-game-area',
@@ -13,8 +12,12 @@ import {last} from "rxjs";
 })
 export class SnakeGameAreaComponent implements OnInit {
 
-  private readonly DELAY_BETWEEN_MOVES = 500;
   private lost = false;
+  private readonly GRID_SIZE = 21;
+
+  private readonly defaultDirection = Direction.RIGHT;
+  private _currentDirection: Direction = this.defaultDirection;
+  private timeout: any;
 
 
   private readonly originalSnakeBody: Point[] = [{x: 11, y: 11}, {x: 10, y: 11}, {x: 9, y: 11}, {x: 8, y: 11}];
@@ -22,17 +25,14 @@ export class SnakeGameAreaComponent implements OnInit {
   private snakeFood!: Point;
 
   @Input() snakeColor = "blueviolet";
-  private readonly defaultDirection = Direction.RIGHT;
-  private _currentDirection: Direction = this.defaultDirection;
+  @Input() directions: Direction[] = []
+  @Input() snakeSpeed = 2;
 
-  @ViewChild('gameBoard') gameBoard!: ElementRef;
-
-  constructor() {
-    this.thisInitializeGame();
-  }
+  @ViewChild('gameBoard', {static: true}) gameBoard!: ElementRef;
 
   ngOnInit(): void {
-    setTimeout(() => this.makeSnakeMove(), 0);
+    this.thisInitializeGame();
+    this.makeSnakeMove();
   }
 
   set currentDirection(value: Direction) {
@@ -50,6 +50,14 @@ export class SnakeGameAreaComponent implements OnInit {
   }
 
   private thisInitializeGame() {
+    // removed directions from last game if any
+    while (this.directions.length) {
+      this.directions.shift()
+    }
+
+    // cancel previously scheduled makeMove
+    clearTimeout(this.timeout)
+
     this.currentDirection = this.defaultDirection;
     this.lost = false;
 
@@ -82,28 +90,37 @@ export class SnakeGameAreaComponent implements OnInit {
     } else {
       console.log("making a move");
 
-      this.updateSnakeCoordinates();
+      if (this.directions.length) {
+        this.currentDirection = this.directions.shift() as Direction
+      }
+
       this.updateIfFoodWasEaten();
       if (this.isFoodEaten()) {
         this.snakeFood = this.getRandomPointThatIsNotSnake(this.snakeBody);
       }
+      this.updateSnakeCoordinates();
       this.drawSnake();
       this.drawFood();
       if (this.hasLost(this.snakeBody)) {
         this.lost = true;
       }
 
-      setTimeout(() => this.makeSnakeMove(), this.DELAY_BETWEEN_MOVES);
+      let msInSecond = 1000;
+      this.timeout = setTimeout(() => this.makeSnakeMove(), msInSecond / this.snakeSpeed);
     }
   }
 
-  private readonly GRID_SIZE = 21;
-
   updateSnakeCoordinates(): void {
+    // update everything except head
     for (let i = this.snakeBody.length - 2; i >= 0; i--) {
-      this.snakeBody[i + 1] = {...this.snakeBody[i]}
+      if (this.snakeBody[i + 1].newCell) {
+        this.snakeBody[i + 1].newCell = false
+      } else {
+        this.snakeBody[i + 1] = {...this.snakeBody[i]};
+      }
     }
 
+    // update the head
     if (this._currentDirection == Direction.RIGHT) {
       this.snakeBody[0].x += 1;
     } else if (this._currentDirection == Direction.LEFT) {
@@ -114,18 +131,18 @@ export class SnakeGameAreaComponent implements OnInit {
       this.snakeBody[0].y -= 1;
     }
 
-    this.redrawSnakeOnTheOtherSideOfTheWallIfNecessary();
+    this.snakeBody.forEach(cell => this.redrawSnakeOnTheOtherSideOfTheWallIfNecessary(cell));
   }
 
-  private redrawSnakeOnTheOtherSideOfTheWallIfNecessary() {
-    if (this.snakeBody[0].x > this.GRID_SIZE) {
-      this.snakeBody[0].x = 0;
-    } else if (this.snakeBody[0].x < 0) {
-      this.snakeBody[0].x = this.GRID_SIZE;
-    } else if (this.snakeBody[0].y > this.GRID_SIZE) {
-      this.snakeBody[0].y = 0;
-    } else if (this.snakeBody[0].y < 0) {
-      this.snakeBody[0].y = this.GRID_SIZE;
+  private redrawSnakeOnTheOtherSideOfTheWallIfNecessary(snakeCell: Point) {
+    if (snakeCell.x > this.GRID_SIZE) {
+      snakeCell.x = 0;
+    } else if (snakeCell.x < 0) {
+      snakeCell.x = this.GRID_SIZE;
+    } else if (snakeCell.y > this.GRID_SIZE) {
+      snakeCell.y = 0;
+    } else if (snakeCell.y < 0) {
+      snakeCell.y = this.GRID_SIZE;
     }
   }
 
@@ -144,7 +161,7 @@ export class SnakeGameAreaComponent implements OnInit {
       this.gameBoard.nativeElement.removeChild(this.gameBoard.nativeElement.firstChild);
     }
 
-    this.snakeBody.forEach(segment => {
+    const snakeDivs = this.snakeBody.map(segment => {
       const snakeElement = document.createElement('div');
       snakeElement.style.gridRowStart = "" + segment.y;
       snakeElement.style.gridColumnStart = "" + segment.x;
@@ -154,17 +171,13 @@ export class SnakeGameAreaComponent implements OnInit {
         snakeElement.style.backgroundColor = this.snakeColor;
       }
 
-      if (this.isAtHeadCoordinate(segment)) {
-        let icon = document.createElement('i');
-        icon.className = 'material-icons';
-        icon.innerText = 'tag_faces';
-        snakeElement.appendChild(icon);
-        snakeElement.classList.add('center-flex-container')
-      }
-
       snakeElement.style.border = ".15vmin solid black";
-      this.gameBoard.nativeElement.appendChild(snakeElement);
+      snakeElement.style.zIndex = "1000";
+      return snakeElement;
     })
+
+
+    snakeDivs.forEach(div => this.gameBoard.nativeElement.appendChild(div))
   }
 
   private isAtHeadCoordinate(segment: Point) {
@@ -176,26 +189,16 @@ export class SnakeGameAreaComponent implements OnInit {
     return subArrayWithoutHead.some(segment => segment.x === snakeBody[0].x && segment.y === snakeBody[0].y)
   }
 
+  private isFoodEaten() {
+    return this.snakeBody[0].x == this.snakeFood.x && this.snakeBody[0].y === this.snakeFood.y;
+  }
+
   private updateIfFoodWasEaten() {
     if (this.isFoodEaten()) {
       const currentLength = this.snakeBody.length;
-      const lastCell = this.snakeBody[currentLength-1];
-      const newCell = {x: lastCell.x, y: lastCell.y};
-
-      if (this._currentDirection == Direction.RIGHT) {
-        newCell.x -= 1;
-      } else if (this._currentDirection == Direction.LEFT) {
-        newCell.x += 1;
-      } else if (this._currentDirection == Direction.DOWN) {
-        newCell.y -= 1;
-      } else if (this._currentDirection == Direction.UP) {
-        newCell.y += 1;
-      }
+      const lastCell = this.snakeBody[currentLength - 1];
+      const newCell = {x: lastCell.x, y: lastCell.y, newCell: true};
       this.snakeBody.push(newCell)
     }
-  }
-
-  private isFoodEaten() {
-    return this.snakeBody[0].x == this.snakeFood.x && this.snakeBody[0].y === this.snakeFood.y;
   }
 }

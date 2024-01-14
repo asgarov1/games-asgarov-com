@@ -17,15 +17,17 @@ export class SnakeGameComponent {
   @ViewChild(SnakeGameAreaComponent) gameAreaComponent!: SnakeGameAreaComponent;
 
   currentSnakeColor = "blueviolet";
+  snakeDirections = [Direction.RIGHT]
+  snakeSpeed = 2;
 
   processArrowButtonPressed(newDirection: Direction): void {
     console.log(`Received direction ${newDirection}`);
     if (this.isOppositeDirection(this.gameAreaComponent.currentDirection, newDirection)) {
-      console.log("Not changing directions, since opposite direction is not possible")
+      console.log("Not adding a direction, since opposite direction is not possible")
       return;
     }
 
-    this.gameAreaComponent.currentDirection = newDirection;
+    this.snakeDirections.push(newDirection);
   }
 
   private isOppositeDirection(currentDirection: Direction, newDirection: Direction): boolean {
@@ -41,5 +43,9 @@ export class SnakeGameComponent {
 
   updateSnakeColor(snakeColor: string) {
     this.currentSnakeColor = snakeColor;
+  }
+
+  updateSnakeSpeed(snakeSpeed: number) {
+    this.snakeSpeed = snakeSpeed;
   }
 }

@@ -1,7 +1,13 @@
-<app-top-snake-panel (onRestart)="restart()" (onColorChange)="updateSnakeColor($event)"></app-top-snake-panel>
+<app-top-snake-panel
+  (onRestart)="restart()"
+  (onColorChange)="updateSnakeColor($event)"
+  (onSpeedChange)="updateSnakeSpeed($event)"
+></app-top-snake-panel>
 <div class="margin-2 center-flex-container">
   <app-snake-game-area
     [snakeColor]="currentSnakeColor"
+    [directions]="snakeDirections"
+    [snakeSpeed]="snakeSpeed"
   ></app-snake-game-area>
 </div>
 <app-button-panel (arrowButtonPressed)="processArrowButtonPressed($event)"></app-button-panel>

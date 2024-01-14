@@ -21,7 +21,7 @@ export class SnakeGameAreaComponent implements OnInit {
 
 
   private readonly originalSnakeBody: Point[] = [{x: 11, y: 11}, {x: 10, y: 11}, {x: 9, y: 11}, {x: 8, y: 11}];
-  private snakeBody: Point[] = [];
+  snakeBody: Point[] = [];
   private snakeFood!: Point;
 
   @Input() snakeColor = "blueviolet";

@@ -2,6 +2,10 @@
   <button class="restart-button" mat-raised-button color="accent" (click)="restart()">RESTART</button>
 
   <span>
+    Current Score: {{currentScore}}
+  </span>
+
+  <span>
     Snake Speed:
       <mat-slider
         [min]="1"

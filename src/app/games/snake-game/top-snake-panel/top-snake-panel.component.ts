@@ -1,4 +1,4 @@
-import {Component, EventEmitter, Output} from '@angular/core';
+import {Component, EventEmitter, Input, Output} from '@angular/core';
 import {MatIconModule} from "@angular/material/icon";
 import {MatButtonModule} from "@angular/material/button";
 import {MatSliderModule} from "@angular/material/slider";
@@ -20,6 +20,7 @@ import {FormsModule} from "@angular/forms";
 })
 export class TopSnakePanelComponent {
 
+  @Input() currentScore!: number;
   @Output() onRestart = new EventEmitter();
   @Output() onColorChange = new EventEmitter<string>();
   @Output() onSpeedChange = new EventEmitter<number>();
